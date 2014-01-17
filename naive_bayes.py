@@ -15,7 +15,7 @@ class NaiveBayes():
     self._priors = {}
 
 
-  def fit(self, X, Y):
+  def fit(self, sample, indicator_booleans):
      """Fit a Multinomial NaiveBayes model from the training set (X, y).
 
         Parameters
@@ -30,28 +30,43 @@ class NaiveBayes():
         self : object
             Returns self.
       """
-      for (x, c) in zip(X, y):
-        self._fit_instance(x, y)
+      for string in sample:
+        words = string.split(' ')
+        for word in word:
+          if self._word_counts[word] is None:
+            self._word_counts = 1
+          else:
+            self._word_counts[word] += 1
+
+      for (string, class_boolean) in zip(sample, class_booleans):
+        self._fit_instance(string, class_boolean)
 
       self._fit_priors()
 
   def _fit_priors(self):
     """Set priors based on data"""
-    ##TODO##
+    for word in self._word_counts.keys:
+      for class_boolean in self._word_class_counts:
+        if self._priors[class_boolean][word] is None:
+          self._priors[class_boolean][word] = self._class_counts[class_boolean][word] / self._word_counts[word]
 
-  def _fit_instance(self, instance, y):
+  def _fit_instance(self, field, class_boolean):
     """Train based on single samples       
 
      Parameters
         ----------
         instance : string = a line of text or single document
                    instance =  "This is not an insult"
-                   instanec = "You are a big moron"
+                   instance = "You are a big moron"
         y : int = class of instance
                 = 0 , 1 , class1, class2
 
       """
-      ##  ?????  ##
+      for word in string.split(' '): 
+        if self_class_counts[class_boolean][word] is None:
+          self_class_counts[class_boolean][word] = 1
+       else:
+         self_class_counts[class_boolean][word] += 1
 
 
 
@@ -116,7 +131,11 @@ class NaiveBayes():
 
       """
 
-    ##TODO##
+    words = instance.split(' ')
+    prob = 0
+    for word in words:
+      prob += log(self._priors[c][word])
+    return prob
 
 if __name__ == '__main__':
   data = pd.read_csv('./train-utf8.csv')
