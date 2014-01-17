@@ -115,7 +115,7 @@ class NaiveBayes():
     ##TODO##
 
 if __name__ == '__main__':
-  data = pd.read_csv('/home/shawn/datascience_notes/train-utf8.csv')
+  data = pd.read_csv('./train-utf8.csv')
   model = NaiveBayes()
   model.fit(data.Comment, data.Insult)
 
