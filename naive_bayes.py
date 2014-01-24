@@ -4,108 +4,158 @@ import pandas as pd
 
 class NaiveBayes():
 
+
   def __init__(self):
-    self._class_per = {}
-    self._class_counts = {}
+
+    """ Setup useful datastructures
+        Feel free to change this
+    """
+
+    self._word_counts = {}  ## Table indexed on word + class, holds count(word + class)
+    self._class_counts = {} ## Array of counts per class [ 143, 234 ]
     self._priors = {}
 
-  def fit(self, sample, indicator_booleans):
-    item_count = 0
-    # print 'indicator_booleans ' + str(set(indicator_booleans)) 
-    total_word_count = float(len(' '.join(sample).split(' ')))
-    for class_boolean in list(set(indicator_booleans)):
-      self._class_per[class_boolean] = 0
-      self._class_counts[class_boolean] = {}
-      self._priors[class_boolean] = {}
 
-    for (string, class_boolean) in zip(sample, indicator_booleans):
-      # print 'zipped: ' + str(zip(sample, indicator_booleans))
-      num_items = len(string.split(' '))
-      item_count += num_items 
-      # print 'item_count: ' + str(item_count)
-      self._class_per[class_boolean] += num_items
-      # print "class_per_hash: " + str(self._class_per)
+  def fit(self, X, Y):
+    """Fit a Multinomial NaiveBayes model from the training set (X, y).
 
-      self._fit_instance(string, class_boolean)
-      # self._clean_hashes(class_boolean)
+        Parameters
+        ----------
+        X : array-like of shape = [n_samples]
+            The training input samples.
 
-    # print 'total_word_count' + str(total_word_count)
-    for key in self._class_per.keys():
-      # print 'key:' + str(key)
-      # print 'num_items ' + str(num_items)
-      self._class_per[key] = self._class_per[key]/total_word_count
-      # print '_class_per: ' + str(self._class_per)
-    # print self._class_per
+        Y : array-like, shape = [n_samples]
+
+        Returns
+        -------
+        self : object
+            Returns self.
+    """
+    for (x, y) in zip(X, Y):
+      self._fit_instance(x, y)
+
     self._fit_priors()
 
   def _fit_priors(self):
     """Set priors based on data"""
-    boolean_set = self._class_per.keys()
-    for class_boolean in boolean_set:
-      for word in self._class_counts[class_boolean].keys():
-        word_count = 0
-        for sum_boolean in boolean_set:
-          if self._class_counts[sum_boolean].get(word) is not None:
-            word_count += self._class_counts[sum_boolean][word]
-        self._priors[class_boolean][word] = (self._class_counts[class_boolean][word]/float(word_count)) / float(self._class_per[class_boolean])
-        print ''
-        print 'WordClassCount: ' + str(self._class_counts[class_boolean][word])
-        print 'WordCount: ' + str(word_count)
-        print 'Calculated val: ' + str(self._priors[class_boolean][word])
-        print 'Class percentage: ' + str(self._class_per[class_boolean])
+    ##TODO##
 
-  def _fit_instance(self, field, class_boolean):
-    for word in field.split(' '):
-      if self._class_counts[class_boolean].get(word) is None:
-        self._class_counts[class_boolean][word] = 1
-        # print 'class_boolean: ' + str(class_boolean)
-        # print 'word: ' + word
-        # print str(self._class_counts[class_boolean][word])
-      else:
-        self._class_counts[class_boolean][word] += 1
-        # print 'class_boolean: ' + str(class_boolean)
-        # print 'word: ' + word
-        # print str(self._class_counts[class_boolean][word])
-    # print str(class_boolean)
+  def _fit_instance(self, instance, y):
+    """Train based on single samples       
 
-  def _clean_hashes(self, class_boolean):
-    self._class_counts[class_boolean]['a'] = 1
-    self._class_counts[class_boolean]['the'] = 1
-    self._class_counts[class_boolean]['this'] = 1
-    self._class_counts[class_boolean]['are'] = 1
+     Parameters
+        ----------
+        instance : string = a line of text or single document
+                   instance =  "This is not an insult"
+                   instanec = "You are a big moron"
+        y : int = class of instance
+                = 0 , 1 , class1, class2
+
+    """
+    ## Update counts on y
+    ##Increment count by 1, or set count to 1 if never seen before
+    self._class_counts[y] = self._class_counts.get(y, 0) + 1
+
+    for word in instance.split():
+        ## Update counts on word + y
+        ## Use pair (word, y) as key and increment counts
+        #self._word_counts[(word, y)] = self._word_counts.get((word, y), 0) + 1
+
+
+      try:
+        self._word_counts[word]
+      except:
+        self._word_counts[word] = {}
+
+      self._word_counts[word][y] = self._word_counts[word].get(y, 0) + 1.0
+      
+
+
 
   def predict(self, X):
-    print 'predict ' + str(X)
+    """ Return array of class predictions for samples
+      Parameters
+      ----------
+        X : array-like of shape = [n_samples]
+            The test input samples.
+
+        Returns
+        -------
+          : array[int] = class per sample
+    """
+
     return [self._predict_instance(x) for x in X]
 
 
   def predict_proba(self, X):
-    print 'predict_proba ' + str(X)
+    """ Return array of class predictions for samples
+      Parameters
+      ----------
+        X : array-like of shape = [n_samples]
+            The test input samples.
+
+        Returns
+        -------
+          : array[array[ float, float ... ], ...] =  class probabilities per sample 
+    """
+
     return [ self._predict_instance(instance) for instance in X ]
 
   def _predict_instance(self, instance):
-    print '_predict_instance ' + str(instance)
-    return [ self._compute_class_probability(instance, c) for c in self._class_per.keys()]
+    """ Return array of class predictions for samples
+      Parameters
+      ----------
+        instance : string = a line of text or single document
 
+        Returns
+        -------
+          : array[ float, float ... ] =  class probabilities 
+    """
+    return [ self._compute_class_probability(instance, c) for c in self._class_counts.keys()]
+    #return  [ x / sum(p) for x in p]
   def _prior_prob(self, c):
     return self._priors[c]
 
   def _compute_class_probability(self, instance, c):
-    words = instance.split(' ')
-    prob = 1
-    # print self._priors
-    for word in words:
-      # print 'WORD: ' + word
-      # print 'val: ' + str(self._priors[c][word])
-      val = self._priors[c][word]
-      if val != 0:
-        prob = prob * self._priors[c][word]
-    prob = prob / math.log(self._class_per[c])
-    # print 'PROB: ' + str(prob)
-    # return prob
+    """ Compute probability of instance under class c
+        Parameters
+        ----------
+        instance : string = a line of text or single document
+
+        Returns
+        -------
+          p : float =  class probability
+
+      HINT : Often times, multiplying many small probabilities leads to underflow, a common numerical tricl
+      is to compute the log probability.
+
+      Remember, the log(p1 * p2 * p3) = log p1 + log p2 + log p3
+    """
+
+    ## P( instance | c) = P(w1 | c ) * .. * P(wN | c) * P(c)
+    p_instance_c = 0 # 0 if we use log-trick else 1
+    for word in instance.split():
+      #Compute P(word | c)
+
+      ##What happens when we haven't seen word in c?
+
+      ##Ignore it
+      if word in self._word_counts.keys() and c in self._word_counts[word].keys(): 
+       p_word_c = math.log(float(self._word_counts[word][c]) / self._class_counts[c])
+       p_instance_c += p_word_c # add when logging instead of multiplying
+
+      ##Smoothing (another form of regularization)
+      #try:
+      #  p_word_c = (float(self._word_counts[word].get(c, 0) + 5.0 / (self._class_counts[c] + 5.0)
+      #except KeyError:
+      #  p_word_c = 1.0/ 100000 #lambda smoothing (plus-one, or plus lambda)
+        #p_word_c =  #lambda smoothing (plus-one, or plus lambda)
+      #p_instance_c *= p_word_c
+    return p_instance_c + math.log(float(self._class_counts[c]) / sum(self._class_counts.values()))
 
 if __name__ == '__main__':
-  data = pd.read_csv('./train-utf8.csv')
+  data = pd.read_csv('train-utf8.csv')
   model = NaiveBayes()
-  model.fit(list(data.Comment), list(data.Insult))
-  print model.predict_proba(["This is not an insult", "You are a big moron"])
+  model.fit(data.Comment, data.Insult)
+
+  print np.exp(model.predict_proba(["This is not an insult", "You are a big moron moron moron"]))
